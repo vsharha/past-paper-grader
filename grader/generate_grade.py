@@ -252,5 +252,3 @@ Please evaluate the student answers in the attached file.
         print(f"Feedback saved to: {output_path}")
 
     return response
-
-
