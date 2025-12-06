@@ -1,24 +1,19 @@
-from grader import generate_mark_scheme, generate_feedback, discuss_feedback
+from grader import discuss_feedback
 
-# Example 1: Generate mark scheme for a past paper
-# generate_mark_scheme(
-#     provider="gemini",
-#     model="gemini-3-pro-preview",
-#     file="past_papers/2017281-INFR08018.pdf"
-# )
-
-# Example 2: Generate feedback for student answers
-# generate_feedback(
-#     provider="gemini",
-#     model="gemini-3-pro-preview",
+# Example 1: Use the same model for both chat and feedback generation
+# discuss_feedback(
+#     chat_provider="gemini",
+#     chat_model="gemini-3-pro-preview",
 #     paper_file="past_papers/2017281-INFR08018.pdf",
-#     student_answers="student_submissions/example_answers.pdf"
+#     student_answers="solutions/Gallery_20251206_143729_251206_143754.pdf"
 # )
 
-# Example 3: Interactive chat to discuss feedback with AI
+# Example 2: Use different models - better model for chat, cheaper for feedback
 discuss_feedback(
     provider="gemini",
     model="gemini-3-pro-preview",
     paper_file="past_papers/2017281-INFR08018.pdf",
-    student_answers="student_submissions/example_answers.pdf"
+    student_answers="solutions/Gallery_20251206_143729_251206_143754.pdf",
+    feedback_provider="gemini",
+    feedback_model="gemini-2.5-flash"
 )

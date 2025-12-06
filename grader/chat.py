@@ -5,7 +5,14 @@ from rich.markdown import Markdown
 from .generate_grade import generate_feedback
 
 
-def discuss_feedback(provider: str, model: str, paper_file: str | Path, student_answers: str | Path) -> None:
+def discuss_feedback(
+    provider: str,
+    model: str,
+    paper_file: str | Path,
+    student_answers: str | Path,
+    feedback_provider: str | None = None,
+    feedback_model: str | None = None
+) -> None:
     """
     Interactive chat to discuss exam feedback with AI.
 
@@ -16,10 +23,12 @@ def discuss_feedback(provider: str, model: str, paper_file: str | Path, student_
     4. Allows students to ask questions about their grades and feedback
 
     Args:
-        provider: AI provider (e.g., "gemini", "openai", "claude")
-        model: Model to use (e.g., "gemini-3-pro-preview", "gpt-4", "claude-sonnet-4.5")
+        provider: AI provider for chat conversation (e.g., "gemini", "openai", "claude")
+        model: Model for chat conversation (e.g., "gemini-3-pro-preview", "gpt-4", "claude-sonnet-4.5")
         paper_file: Path to the original past paper PDF
         student_answers: Path to the student's answers (PDF or text file)
+        feedback_provider: AI provider for feedback generation (defaults to chat_provider if None)
+        feedback_model: Model for feedback generation (defaults to chat_model if None)
 
     Special commands:
         - quit/exit: End the conversation
@@ -27,6 +36,11 @@ def discuss_feedback(provider: str, model: str, paper_file: str | Path, student_
         - clear: Clear conversation history (keeps system prompt)
         - feedback: Re-display the original feedback
     """
+    # Default feedback provider/model to chat provider/model if not specified
+    if feedback_provider is None:
+        feedback_provider = provider
+    if feedback_model is None:
+        feedback_model = model
     console = Console()
 
     # Convert to Path objects
@@ -41,7 +55,7 @@ def discuss_feedback(provider: str, model: str, paper_file: str | Path, student_
     # Check if feedback exists, generate if not
     if not feedback_path.exists():
         console.print(f"[yellow]Feedback not found. Generating feedback for {paper_path.name}...[/yellow]")
-        generate_feedback(provider, model, paper_file, student_answers)
+        generate_feedback(feedback_provider, feedback_model, paper_file, student_answers)
         console.print("[green]Feedback generated successfully![/green]\n")
 
     # Load feedback content
@@ -96,20 +110,24 @@ Here is my feedback:
 I also have access to the original exam paper and my answers for reference."""
 
     try:
-        response = conversation.send(
+        console.print("\n[bold green]Feedback Discussion Started![/bold green]")
+        console.print("\n[dim]Commands: 'quit'/'exit' to end, 'history' to view chat, 'clear' to reset, 'feedback' to re-display feedback[/dim]")
+        console.print("=" * 60)
+        console.print("\n[bold cyan]Assistant:[/bold cyan]")
+
+        # Stream initial response
+        response = ""
+        for chunk in conversation.stream(
             user_text=initial_message,
             file=[str(paper_file), str(student_answers)]
-        )
+        ):
+            response += chunk
+
+        # Display with Rich markdown
+        console.print(Markdown(response))
     except Exception as e:
         console.print(f"[red]Error initializing conversation: {e}[/red]")
         return
-
-    # Display initial response
-    console.print("\n[bold green]Feedback Discussion Started![/bold green]")
-    console.print("\n[dim]Commands: 'quit'/'exit' to end, 'history' to view chat, 'clear' to reset, 'feedback' to re-display feedback[/dim]")
-    console.print("=" * 60)
-    console.print("\n[bold cyan]Assistant:[/bold cyan]")
-    console.print(Markdown(response))
 
     # Main chat loop
     while True:

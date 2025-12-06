@@ -2,5 +2,6 @@
 past_papers/*
 feedback/*
 mark_schemes/*
+solutions/*
 __pycache__/*
 .env
