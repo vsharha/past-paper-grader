@@ -75,6 +75,34 @@ def generate_mark_scheme_mode():
     console = Console()
     past_papers_dir = Path("past_papers")
 
+    # Additional instructions for follow-through marks
+    follow_through_instructions = """**Follow-Through Marking Policy:**
+
+When creating the mark scheme, implement a follow-through marks (FT) policy for multi-step questions:
+
+1. **Error Carried Forward (ECF)**: If a student makes an error in an early step but correctly applies subsequent methods using their incorrect answer, award follow-through marks for the method.
+
+2. **Mark Allocation for Follow-Through**:
+   - Clearly indicate which marks can be awarded as follow-through marks
+   - Use notation like "FT" or "ECF" next to relevant mark allocations
+   - Example: "2 marks for correct substitution (FT from part a)"
+
+3. **Guidelines**:
+   - Follow-through marks should only apply to method marks, not accuracy marks for final answers
+   - If an earlier error makes subsequent parts trivial or impossible, do not award follow-through marks
+   - Be explicit about when follow-through applies and when it doesn't
+   - For calculation errors: award full method marks if the approach is correct
+
+4. **Example Format**:
+   ```
+   Part (b) [4 marks]
+   - 2 marks: Correct method for calculating X (FT from incorrect Y in part a)
+   - 1 mark: Correct algebraic manipulation (FT)
+   - 1 mark: Correct final answer (only if Y from part a was correct)
+   ```
+
+This ensures fair marking when students make early errors but demonstrate understanding of subsequent concepts."""
+
     try:
         selected_paper = select_file(console, past_papers_dir, "Select Past Paper")
         if not selected_paper:
@@ -86,7 +114,8 @@ def generate_mark_scheme_mode():
             mark_scheme = generate_mark_scheme(
                 provider="gemini",
                 model="gemini-3-pro-preview",
-                file=str(selected_paper)
+                file=str(selected_paper),
+                additional_instructions=follow_through_instructions
             )
 
         console.print("[bold green]✓ Mark scheme generated successfully![/bold green]\n")
@@ -104,6 +133,37 @@ def generate_feedback_mode():
     console = Console()
     past_papers_dir = Path("past_papers")
     solutions_dir = Path("solutions")
+
+    # Additional instructions for follow-through marks
+    follow_through_instructions = """**Follow-Through Marking Policy:**
+
+When grading student answers, apply a follow-through marks (FT) policy for multi-step questions:
+
+1. **Error Carried Forward (ECF)**: If a student makes an error in an early step but correctly applies subsequent methods using their incorrect answer, award follow-through marks for the method.
+
+2. **How to Apply Follow-Through**:
+   - Check if the mark scheme indicates follow-through marks (FT or ECF notation)
+   - Award method marks even if the numerical answer is wrong due to an earlier error
+   - Clearly indicate in feedback when follow-through marks are awarded
+   - Example: "✓ Correct method for integration (2 marks, FT from incorrect value in part a)"
+
+3. **Guidelines**:
+   - Follow-through marks apply to method marks, not accuracy marks for final answers
+   - If an earlier error makes subsequent parts trivial, do not award follow-through marks
+   - Be explicit in feedback about which marks were awarded as follow-through
+   - Track errors through multi-part questions to apply FT consistently
+
+4. **Feedback Format**:
+   ```
+   Part (b) - 3/4 marks
+   ✓ Correct substitution method (2 marks, FT)
+   ✓ Correct algebraic steps (1 mark, FT)
+   ✗ Final answer incorrect due to error in part (a) (0/1 marks)
+
+   Note: You earned follow-through marks for applying the correct method despite the earlier error.
+   ```
+
+This ensures fair grading and helps students understand they demonstrated method understanding even when making earlier mistakes."""
 
     try:
         selected_paper = select_file(console, past_papers_dir, "Select Past Paper")
@@ -123,7 +183,8 @@ def generate_feedback_mode():
                 provider="gemini",
                 model="gemini-3-pro-preview",
                 paper_file=str(selected_paper),
-                student_answers=str(selected_solution)
+                student_answers=str(selected_solution),
+                additional_instructions=follow_through_instructions
             )
 
         console.print("[bold green]✓ Feedback generated successfully![/bold green]\n")
@@ -141,6 +202,37 @@ def select_and_discuss():
     console = Console()
     past_papers_dir = Path("past_papers")
     solutions_dir = Path("solutions")
+
+    # Additional instructions for follow-through marks
+    follow_through_instructions = """**Follow-Through Marking Policy:**
+
+When grading student answers, apply a follow-through marks (FT) policy for multi-step questions:
+
+1. **Error Carried Forward (ECF)**: If a student makes an error in an early step but correctly applies subsequent methods using their incorrect answer, award follow-through marks for the method.
+
+2. **How to Apply Follow-Through**:
+   - Check if the mark scheme indicates follow-through marks (FT or ECF notation)
+   - Award method marks even if the numerical answer is wrong due to an earlier error
+   - Clearly indicate in feedback when follow-through marks are awarded
+   - Example: "✓ Correct method for integration (2 marks, FT from incorrect value in part a)"
+
+3. **Guidelines**:
+   - Follow-through marks apply to method marks, not accuracy marks for final answers
+   - If an earlier error makes subsequent parts trivial, do not award follow-through marks
+   - Be explicit in feedback about which marks were awarded as follow-through
+   - Track errors through multi-part questions to apply FT consistently
+
+4. **Feedback Format**:
+   ```
+   Part (b) - 3/4 marks
+   ✓ Correct substitution method (2 marks, FT)
+   ✓ Correct algebraic steps (1 mark, FT)
+   ✗ Final answer incorrect due to error in part (a) (0/1 marks)
+
+   Note: You earned follow-through marks for applying the correct method despite the earlier error.
+   ```
+
+This ensures fair grading and helps students understand they demonstrated method understanding even when making earlier mistakes."""
 
     try:
         selected_paper = select_file(console, past_papers_dir, "Select Past Paper")
@@ -161,7 +253,8 @@ def select_and_discuss():
             paper_file=str(selected_paper),
             student_answers=str(selected_solution),
             feedback_provider="gemini",
-            feedback_model="gemini-3-pro-preview"
+            feedback_model="gemini-3-pro-preview",
+            additional_instructions=follow_through_instructions
         )
     except KeyboardInterrupt:
         console.print("\n\n[yellow]Discussion cancelled.[/yellow]")

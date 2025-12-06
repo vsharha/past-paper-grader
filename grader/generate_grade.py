@@ -33,7 +33,7 @@ def _get_unique_output_path(input_path: Path, output_dir: Path, suffix: str = ".
     return output_dir / (input_path.stem + suffix)
 
 
-def generate_mark_scheme(provider: str, model: str, file: str | Path, save: bool = True):
+def generate_mark_scheme(provider: str, model: str, file: str | Path, save: bool = True, additional_instructions: str = ""):
     system_prompt = """You are an expert mark scheme creator for undergraduate Computer Science and Mathematics courses.
 
 Your task is to analyze the provided exam paper PDF and generate a comprehensive, structured mark scheme that will be used by an AI grading system to provide feedback to students.
@@ -121,6 +121,10 @@ For each question, provide:
 Generate a complete, well-structured mark scheme following these guidelines.
 """
 
+    # Append additional instructions if provided
+    if additional_instructions:
+        system_prompt += f"\n\n## Additional Instructions:\n\n{additional_instructions}"
+
     response = request_ai(
         provider=provider,
         model=model,
@@ -146,7 +150,7 @@ Generate a complete, well-structured mark scheme following these guidelines.
 
 
 
-def generate_feedback(provider: str, model: str, paper_file: str | Path, student_answers: str | Path | list[str | Path], save: bool = True):
+def generate_feedback(provider: str, model: str, paper_file: str | Path, student_answers: str | Path | list[str | Path], save: bool = True, additional_instructions: str = ""):
     paper_path = Path(paper_file)
     mark_schemes_dir = Path("mark_schemes")
 
@@ -155,7 +159,7 @@ def generate_feedback(provider: str, model: str, paper_file: str | Path, student
 
     if not mark_scheme_path.exists():
         print(f"Mark scheme not found. Generating mark scheme for {paper_path.name}...")
-        generate_mark_scheme(provider, model, paper_file)
+        generate_mark_scheme(provider, model, paper_file, additional_instructions=additional_instructions)
 
     mark_scheme = mark_scheme_path.read_text()
 
@@ -252,6 +256,10 @@ Your task is to evaluate student answers against the provided mark scheme and ge
 
 Generate comprehensive, fair, and educational feedback.
 """
+
+    # Append additional instructions if provided
+    if additional_instructions:
+        feedback_prompt += f"\n\n## Additional Instructions:\n\n{additional_instructions}"
 
     user_message = f"""Please grade the student's answers using the mark scheme below.
 

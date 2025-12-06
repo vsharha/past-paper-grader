@@ -40,7 +40,8 @@ def discuss_feedback(
     paper_file: str | Path,
     student_answers: str | Path,
     feedback_provider: str | None = None,
-    feedback_model: str | None = None
+    feedback_model: str | None = None,
+    additional_instructions: str = ""
 ) -> None:
     """
     Interactive chat to discuss exam feedback with AI.
@@ -58,6 +59,7 @@ def discuss_feedback(
         student_answers: Path to the student's answers (PDF or text file)
         feedback_provider: AI provider for feedback generation (defaults to chat_provider if None)
         feedback_model: Model for feedback generation (defaults to chat_model if None)
+        additional_instructions: Additional instructions to append to system prompts
 
     Special commands:
         - quit/exit: End the conversation
@@ -97,7 +99,7 @@ def discuss_feedback(
     # Check if feedback exists, generate if not
     if not feedback_path.exists():
         console.print(f"[yellow]Feedback not found. Generating feedback for {paper_path.name}...[/yellow]")
-        generate_feedback(feedback_provider, feedback_model, paper_file, student_answers)
+        generate_feedback(feedback_provider, feedback_model, paper_file, student_answers, additional_instructions=additional_instructions)
         console.print("[green]Feedback generated successfully![/green]\n")
 
     # Load feedback content
