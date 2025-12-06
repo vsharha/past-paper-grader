@@ -4,6 +4,7 @@ from pathlib import Path
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
+from rich.markdown import Markdown
 
 
 def select_mode(console: Console) -> str:
@@ -82,13 +83,16 @@ def generate_mark_scheme_mode():
         console.print(f"\n[green]Selected:[/green] {selected_paper.relative_to(past_papers_dir)}\n")
 
         with console.status("[bold cyan]Generating mark scheme..."):
-            generate_mark_scheme(
+            mark_scheme = generate_mark_scheme(
                 provider="gemini",
                 model="gemini-3-pro-preview",
                 file=str(selected_paper)
             )
 
-        console.print("[bold green]✓ Mark scheme generated successfully![/bold green]")
+        console.print("[bold green]✓ Mark scheme generated successfully![/bold green]\n")
+        console.print("=" * 80)
+        console.print(Markdown(mark_scheme))
+        console.print("=" * 80)
     except KeyboardInterrupt:
         console.print("\n\n[yellow]Mark scheme generation cancelled.[/yellow]")
     except Exception as e:
@@ -115,14 +119,17 @@ def generate_feedback_mode():
         console.print(f"  Solution: {selected_solution.relative_to(solutions_dir)}\n")
 
         with console.status("[bold cyan]Generating feedback..."):
-            generate_feedback(
+            feedback = generate_feedback(
                 provider="gemini",
                 model="gemini-3-pro-preview",
                 paper_file=str(selected_paper),
                 student_answers=str(selected_solution)
             )
 
-        console.print("[bold green]✓ Feedback generated successfully![/bold green]")
+        console.print("[bold green]✓ Feedback generated successfully![/bold green]\n")
+        console.print("=" * 80)
+        console.print(Markdown(feedback))
+        console.print("=" * 80)
     except KeyboardInterrupt:
         console.print("\n\n[yellow]Feedback generation cancelled.[/yellow]")
     except Exception as e:
