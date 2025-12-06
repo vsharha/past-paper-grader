@@ -1,5 +1,10 @@
 from grader import discuss_feedback
-from grader.generate_grade import generate_mark_scheme, generate_feedback
+from grader.generate_grade import (
+    generate_mark_scheme,
+    generate_feedback,
+    has_mark_scheme,
+    has_feedback,
+)
 from pathlib import Path
 from rich.console import Console
 from rich.table import Table
@@ -10,18 +15,22 @@ from rich.markdown import Markdown
 def select_mode(console: Console) -> str:
     """Display mode selection menu and return selected mode."""
     console.print("\n")
-    console.print(Panel.fit(
-        "[bold cyan]Past Paper Grading System[/bold cyan]\n\n"
-        "Select operation mode:",
-        border_style="cyan"
-    ))
+    console.print(
+        Panel.fit(
+            "[bold cyan]Past Paper Grading System[/bold cyan]\n\n"
+            "Select operation mode:",
+            border_style="cyan",
+        )
+    )
 
     table = Table(show_header=True, header_style="bold magenta", border_style="dim")
     table.add_column("#", style="cyan", width=6)
     table.add_column("Mode", style="white")
     table.add_column("Description", style="dim")
 
-    table.add_row("1", "Generate Mark Scheme", "Create marking criteria from a past paper")
+    table.add_row(
+        "1", "Generate Mark Scheme", "Create marking criteria from a past paper"
+    )
     table.add_row("2", "Generate Feedback", "Grade student answers using mark scheme")
     table.add_row("3", "Discuss Feedback", "Interactive chat to discuss grading")
 
@@ -30,16 +39,14 @@ def select_mode(console: Console) -> str:
 
     choice = input().strip()
 
-    mode_map = {
-        "1": "mark_scheme",
-        "2": "feedback",
-        "3": "discuss"
-    }
+    mode_map = {"1": "mark_scheme", "2": "feedback", "3": "discuss"}
 
     return mode_map.get(choice, "")
 
 
-def select_file(console: Console, directory: Path, title: str) -> Path | None:
+def select_file(
+    console: Console, directory: Path, title: str, status_func=None
+) -> Path | None:
     """Helper function to select a file from a directory."""
     files = sorted(list(directory.glob("**/*.pdf")))
 
@@ -51,9 +58,15 @@ def select_file(console: Console, directory: Path, title: str) -> Path | None:
     table = Table(show_header=True, header_style="bold magenta")
     table.add_column("#", style="dim", width=6)
     table.add_column("File Path")
+    if status_func:
+        table.add_column("Status", style="green", width=8)
 
     for i, file in enumerate(files, 1):
-        table.add_row(str(i), str(file.relative_to(directory)))
+        if status_func:
+            status = "[green]✓[/green]" if status_func(file) else "[red]✗[/red]"
+            table.add_row(str(i), str(file.relative_to(directory)), status)
+        else:
+            table.add_row(str(i), str(file.relative_to(directory)))
 
     console.print(table)
     console.print("\n[bold green]Enter number:[/bold green] ", end="")
@@ -104,24 +117,37 @@ When creating the mark scheme, implement a follow-through marks (FT) policy for 
 This ensures fair marking when students make early errors but demonstrate understanding of subsequent concepts."""
 
     try:
-        selected_paper = select_file(console, past_papers_dir, "Select Past Paper")
+        selected_paper = select_file(
+            console, past_papers_dir, "Select Past Paper", status_func=has_mark_scheme
+        )
         if not selected_paper:
             return
 
-        console.print(f"\n[green]Selected:[/green] {selected_paper.relative_to(past_papers_dir)}\n")
+        console.print(
+            f"\n[green]Selected:[/green] {selected_paper.relative_to(past_papers_dir)}\n"
+        )
 
         with console.status("[bold cyan]Generating mark scheme..."):
             mark_scheme = generate_mark_scheme(
                 provider="gemini",
                 model="gemini-3-pro-preview",
                 file=str(selected_paper),
-                additional_instructions=follow_through_instructions
+                additional_instructions=follow_through_instructions,
             )
 
-        console.print("[bold green]✓ Mark scheme generated successfully![/bold green]\n")
-        console.print("=" * 80)
-        console.print(Markdown(mark_scheme))
-        console.print("=" * 80)
+        console.print(
+            "[bold green]✓ Mark scheme generated successfully![/bold green]\n"
+        )
+
+        # Create a panel with max width for centered display
+        md_panel = Panel(
+            Markdown(mark_scheme),
+            title="[bold cyan]Mark Scheme[/bold cyan]",
+            border_style="cyan",
+            width=min(120, console.width),
+            padding=(1, 2),
+        )
+        console.print(md_panel, justify="center")
     except KeyboardInterrupt:
         console.print("\n\n[yellow]Mark scheme generation cancelled.[/yellow]")
     except Exception as e:
@@ -166,11 +192,18 @@ When grading student answers, apply a follow-through marks (FT) policy for multi
 This ensures fair grading and helps students understand they demonstrated method understanding even when making earlier mistakes."""
 
     try:
-        selected_paper = select_file(console, past_papers_dir, "Select Past Paper")
+        selected_paper = select_file(
+            console, past_papers_dir, "Select Past Paper", status_func=has_mark_scheme
+        )
         if not selected_paper:
             return
 
-        selected_solution = select_file(console, solutions_dir, "Select Student Solution")
+        selected_solution = select_file(
+            console,
+            solutions_dir,
+            "Select Student Solution",
+            status_func=lambda f: has_feedback(selected_paper, f),
+        )
         if not selected_solution:
             return
 
@@ -184,13 +217,20 @@ This ensures fair grading and helps students understand they demonstrated method
                 model="gemini-3-pro-preview",
                 paper_file=str(selected_paper),
                 student_answers=str(selected_solution),
-                additional_instructions=follow_through_instructions
+                additional_instructions=follow_through_instructions,
             )
 
         console.print("[bold green]✓ Feedback generated successfully![/bold green]\n")
-        console.print("=" * 80)
-        console.print(Markdown(feedback))
-        console.print("=" * 80)
+
+        # Create a panel with max width for centered display
+        feedback_panel = Panel(
+            Markdown(feedback),
+            title="[bold cyan]Student Feedback[/bold cyan]",
+            border_style="cyan",
+            width=min(120, console.width),
+            padding=(1, 2),
+        )
+        console.print(feedback_panel, justify="center")
     except KeyboardInterrupt:
         console.print("\n\n[yellow]Feedback generation cancelled.[/yellow]")
     except Exception as e:
@@ -235,11 +275,18 @@ When grading student answers, apply a follow-through marks (FT) policy for multi
 This ensures fair grading and helps students understand they demonstrated method understanding even when making earlier mistakes."""
 
     try:
-        selected_paper = select_file(console, past_papers_dir, "Select Past Paper")
+        selected_paper = select_file(
+            console, past_papers_dir, "Select Past Paper", status_func=has_mark_scheme
+        )
         if not selected_paper:
             return
 
-        selected_solution = select_file(console, solutions_dir, "Select Student Solution")
+        selected_solution = select_file(
+            console,
+            solutions_dir,
+            "Select Student Solution",
+            status_func=lambda f: has_feedback(selected_paper, f),
+        )
         if not selected_solution:
             return
 
@@ -254,7 +301,7 @@ This ensures fair grading and helps students understand they demonstrated method
             student_answers=str(selected_solution),
             feedback_provider="gemini",
             feedback_model="gemini-3-pro-preview",
-            additional_instructions=follow_through_instructions
+            additional_instructions=follow_through_instructions,
         )
     except KeyboardInterrupt:
         console.print("\n\n[yellow]Discussion cancelled.[/yellow]")
