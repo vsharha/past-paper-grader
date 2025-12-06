@@ -1,7 +1,7 @@
 from litellm_utils import request_ai
 from pathlib import Path
 
-def generate_mark_scheme(file: str | Path, save: bool = True):
+def generate_mark_scheme(provider: str, model: str, file: str | Path, save: bool = True):
     system_prompt = """You are an expert mark scheme creator for undergraduate Computer Science and Mathematics courses.
 
 Your task is to analyze the provided exam paper PDF and generate a comprehensive, structured mark scheme that will be used by an AI grading system to provide feedback to students.
@@ -90,8 +90,8 @@ Generate a complete, well-structured mark scheme following these guidelines.
 """
 
     response = request_ai(
-        provider="gemini",
-        model="gemini-3-pro-preview",
+        provider=provider,
+        model=model,
         system_prompt=system_prompt,
         user_text="Use the attached file as reference",
         file=file
@@ -115,13 +115,13 @@ Generate a complete, well-structured mark scheme following these guidelines.
 
 
 
-def generate_feedback(paper_file: str | Path, student_answers: str | Path | list[str | Path], save: bool = True):
+def generate_feedback(provider: str, model: str, paper_file: str | Path, student_answers: str | Path | list[str | Path], save: bool = True):
     paper_path = Path(paper_file)
     mark_scheme_path = Path("mark_schemes") / (paper_path.stem + ".md")
 
     if not mark_scheme_path.exists():
         print(f"Mark scheme not found. Generating mark scheme for {paper_path.name}...")
-        generate_mark_scheme(paper_file)
+        generate_mark_scheme(provider, model, paper_file)
 
     mark_scheme = mark_scheme_path.read_text()
 
@@ -233,8 +233,8 @@ Please evaluate the student answers in the attached file.
 """
 
     response = request_ai(
-        provider="gemini",
-        model="gemini-3-pro-preview",
+        provider=provider,
+        model=model,
         system_prompt=feedback_prompt,
         user_text=user_message,
         file=student_answers

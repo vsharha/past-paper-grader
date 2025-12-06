@@ -6,4 +6,5 @@ requires-python = ">=3.14"
 dependencies = [
     "grpcio>=1.76.0",
     "litellm-utils>=1.1.0",
+    "rich>=14.2.0",
 ]
