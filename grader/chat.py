@@ -3,12 +3,13 @@ from pathlib import Path
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.live import Live
+from rich.spinner import Spinner
 from .generate_grade import generate_feedback
 
 
 def stream_markdown(stream_iterator, console: Console) -> str:
     """
-    Stream tokens and display as live-updating markdown.
+    Stream tokens and display as live-updating markdown with loading animation.
 
     Args:
         stream_iterator: Iterator yielding text chunks
@@ -18,10 +19,16 @@ def stream_markdown(stream_iterator, console: Console) -> str:
         Complete streamed text
     """
     accumulated_text = ""
+    first_chunk = True
 
-    with Live(Markdown(""), console=console, refresh_per_second=10) as live:
+    with Live(Spinner("dots", text="[dim]Thinking...[/dim]"), console=console, refresh_per_second=10) as live:
         for chunk in stream_iterator:
             accumulated_text += chunk
+
+            # Replace spinner with markdown after first chunk
+            if first_chunk:
+                first_chunk = False
+
             live.update(Markdown(accumulated_text))
 
     return accumulated_text
@@ -135,7 +142,7 @@ I also have access to the original exam paper and my answers for reference."""
         console.print("\n[bold green]Feedback Discussion Started![/bold green]")
         console.print("\n[dim]Commands: 'quit'/'exit' to end, 'history' to view chat, 'clear' to reset, 'feedback' to re-display feedback[/dim]")
         console.print("=" * 60)
-        console.print("\n[bold cyan]Assistant:[/bold cyan]\n")
+        console.print("\n[bold cyan]Assistant:[/bold cyan]")
 
         # Stream initial response with live markdown
         stream_markdown(
@@ -145,6 +152,7 @@ I also have access to the original exam paper and my answers for reference."""
             ),
             console
         )
+        print()  # Add newline after response
     except Exception as e:
         console.print(f"\n[red]Error initializing conversation: {e}[/red]")
         return
@@ -204,10 +212,11 @@ I also have access to the original exam paper and my answers for reference."""
                 continue
 
             # Stream AI response
-            console.print("\n[bold cyan]Assistant:[/bold cyan]\n")
+            console.print("\n[bold cyan]Assistant:[/bold cyan]")
 
             try:
                 stream_markdown(conversation.stream(user_text=user_input), console)
+                print()  # Add newline after response
 
             except Exception as e:
                 console.print(f"[red]Error getting response: {e}[/red]")
