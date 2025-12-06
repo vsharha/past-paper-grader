@@ -1,0 +1,9 @@
+[project]
+name = "past-paper"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.14"
+dependencies = [
+    "grpcio>=1.76.0",
+    "litellm-utils>=1.1.0",
+]
