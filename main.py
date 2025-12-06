@@ -74,20 +74,25 @@ def generate_mark_scheme_mode():
     console = Console()
     past_papers_dir = Path("past_papers")
 
-    selected_paper = select_file(console, past_papers_dir, "Select Past Paper")
-    if not selected_paper:
-        return
+    try:
+        selected_paper = select_file(console, past_papers_dir, "Select Past Paper")
+        if not selected_paper:
+            return
 
-    console.print(f"\n[green]Selected:[/green] {selected_paper.relative_to(past_papers_dir)}\n")
+        console.print(f"\n[green]Selected:[/green] {selected_paper.relative_to(past_papers_dir)}\n")
 
-    with console.status("[bold cyan]Generating mark scheme..."):
-        generate_mark_scheme(
-            provider="gemini",
-            model="gemini-2.5-flash",
-            file=str(selected_paper)
-        )
+        with console.status("[bold cyan]Generating mark scheme..."):
+            generate_mark_scheme(
+                provider="gemini",
+                model="gemini-3-pro-preview",
+                file=str(selected_paper)
+            )
 
-    console.print("[bold green]✓ Mark scheme generated successfully![/bold green]")
+        console.print("[bold green]✓ Mark scheme generated successfully![/bold green]")
+    except KeyboardInterrupt:
+        console.print("\n\n[yellow]Mark scheme generation cancelled.[/yellow]")
+    except Exception as e:
+        console.print(f"\n[red]Error generating mark scheme: {e}[/red]")
 
 
 def generate_feedback_mode():
@@ -96,27 +101,32 @@ def generate_feedback_mode():
     past_papers_dir = Path("past_papers")
     solutions_dir = Path("solutions")
 
-    selected_paper = select_file(console, past_papers_dir, "Select Past Paper")
-    if not selected_paper:
-        return
+    try:
+        selected_paper = select_file(console, past_papers_dir, "Select Past Paper")
+        if not selected_paper:
+            return
 
-    selected_solution = select_file(console, solutions_dir, "Select Student Solution")
-    if not selected_solution:
-        return
+        selected_solution = select_file(console, solutions_dir, "Select Student Solution")
+        if not selected_solution:
+            return
 
-    console.print(f"\n[green]Selected:[/green]")
-    console.print(f"  Paper: {selected_paper.relative_to(past_papers_dir)}")
-    console.print(f"  Solution: {selected_solution.relative_to(solutions_dir)}\n")
+        console.print(f"\n[green]Selected:[/green]")
+        console.print(f"  Paper: {selected_paper.relative_to(past_papers_dir)}")
+        console.print(f"  Solution: {selected_solution.relative_to(solutions_dir)}\n")
 
-    with console.status("[bold cyan]Generating feedback..."):
-        generate_feedback(
-            provider="gemini",
-            model="gemini-3-pro-preview",
-            paper_file=str(selected_paper),
-            student_answers=str(selected_solution)
-        )
+        with console.status("[bold cyan]Generating feedback..."):
+            generate_feedback(
+                provider="gemini",
+                model="gemini-3-pro-preview",
+                paper_file=str(selected_paper),
+                student_answers=str(selected_solution)
+            )
 
-    console.print("[bold green]✓ Feedback generated successfully![/bold green]")
+        console.print("[bold green]✓ Feedback generated successfully![/bold green]")
+    except KeyboardInterrupt:
+        console.print("\n\n[yellow]Feedback generation cancelled.[/yellow]")
+    except Exception as e:
+        console.print(f"\n[red]Error generating feedback: {e}[/red]")
 
 
 def select_and_discuss():
@@ -125,42 +135,52 @@ def select_and_discuss():
     past_papers_dir = Path("past_papers")
     solutions_dir = Path("solutions")
 
-    selected_paper = select_file(console, past_papers_dir, "Select Past Paper")
-    if not selected_paper:
-        return
+    try:
+        selected_paper = select_file(console, past_papers_dir, "Select Past Paper")
+        if not selected_paper:
+            return
 
-    selected_solution = select_file(console, solutions_dir, "Select Student Solution")
-    if not selected_solution:
-        return
+        selected_solution = select_file(console, solutions_dir, "Select Student Solution")
+        if not selected_solution:
+            return
 
-    console.print(f"\n[green]Selected:[/green]")
-    console.print(f"  Paper: {selected_paper.relative_to(past_papers_dir)}")
-    console.print(f"  Solution: {selected_solution.relative_to(solutions_dir)}\n")
+        console.print(f"\n[green]Selected:[/green]")
+        console.print(f"  Paper: {selected_paper.relative_to(past_papers_dir)}")
+        console.print(f"  Solution: {selected_solution.relative_to(solutions_dir)}\n")
 
-    discuss_feedback(
-        provider="gemini",
-        model="gemini-2.5-flash",
-        paper_file=str(selected_paper),
-        student_answers=str(selected_solution),
-        feedback_provider="gemini",
-        feedback_model="gemini-3-pro-preview"
-    )
+        discuss_feedback(
+            provider="gemini",
+            model="gemini-2.5-flash",
+            paper_file=str(selected_paper),
+            student_answers=str(selected_solution),
+            feedback_provider="gemini",
+            feedback_model="gemini-3-pro-preview"
+        )
+    except KeyboardInterrupt:
+        console.print("\n\n[yellow]Discussion cancelled.[/yellow]")
+    except Exception as e:
+        console.print(f"\n[red]Error during discussion: {e}[/red]")
 
 
 def main():
     """Main entry point for the grading system."""
     console = Console()
 
-    mode = select_mode(console)
+    try:
+        mode = select_mode(console)
 
-    if mode == "mark_scheme":
-        generate_mark_scheme_mode()
-    elif mode == "feedback":
-        generate_feedback_mode()
-    elif mode == "discuss":
-        select_and_discuss()
-    else:
-        console.print("[red]Invalid mode selection![/red]")
+        if mode == "mark_scheme":
+            generate_mark_scheme_mode()
+        elif mode == "feedback":
+            generate_feedback_mode()
+        elif mode == "discuss":
+            select_and_discuss()
+        else:
+            console.print("[red]Invalid mode selection![/red]")
+    except KeyboardInterrupt:
+        console.print("\n\n[yellow]Operation cancelled by user. Goodbye![/yellow]")
+    except Exception as e:
+        console.print(f"\n[red]Unexpected error: {e}[/red]")
 
 
 if __name__ == "__main__":
