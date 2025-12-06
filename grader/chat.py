@@ -4,7 +4,7 @@ from rich.console import Console
 from rich.markdown import Markdown
 from rich.live import Live
 from rich.spinner import Spinner
-from .generate_grade import generate_feedback
+from .generate_grade import generate_feedback, _get_unique_output_path
 
 
 def stream_markdown(stream_iterator, console: Console) -> str:
@@ -76,10 +76,23 @@ def discuss_feedback(
     paper_path = Path(paper_file)
     student_path = Path(student_answers)
 
-    # Derive expected feedback file path
+    # Derive expected feedback file path using the same logic as generate_feedback
     feedback_dir = Path("feedback")
-    feedback_filename = f"{paper_path.stem}_feedback_{student_path.stem}.md"
-    feedback_path = feedback_dir / feedback_filename
+
+    # Get unique paths for both paper and student answers
+    paper_unique_path = _get_unique_output_path(paper_path, Path("_temp"), suffix="")
+    student_unique_path = _get_unique_output_path(student_path, Path("_temp"), suffix="")
+
+    # Create the feedback path matching generate_feedback logic
+    if paper_unique_path.parent != Path("_temp"):
+        # Paper is in subdirectory - preserve structure
+        feedback_subdir = feedback_dir / paper_unique_path.parent
+        output_filename = f"{paper_unique_path.stem}_feedback_{student_unique_path.stem}.md"
+        feedback_path = feedback_subdir / output_filename
+    else:
+        # Paper is in root - use simple naming
+        output_filename = f"{paper_path.stem}_feedback_{student_path.stem}.md"
+        feedback_path = feedback_dir / output_filename
 
     # Check if feedback exists, generate if not
     if not feedback_path.exists():

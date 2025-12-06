@@ -1,6 +1,38 @@
 from litellm_utils import request_ai
 from pathlib import Path
 
+
+def _get_unique_output_path(input_path: Path, output_dir: Path, suffix: str = ".md") -> Path:
+    """
+    Generate a unique output path that preserves directory structure.
+
+    For files in subdirectories, creates corresponding subdirectories in output_dir.
+    For files in current directory, uses filename directly.
+
+    Examples:
+        past_papers/2023/exam.pdf -> mark_schemes/past_papers/2023/exam.md
+        exam.pdf -> mark_schemes/exam.md
+    """
+    # Get the absolute path to handle relative paths correctly
+    abs_input = input_path.resolve()
+    cwd = Path.cwd()
+
+    # Try to get relative path from current working directory
+    try:
+        rel_path = abs_input.relative_to(cwd)
+        # If the file is in a subdirectory, preserve the structure
+        if rel_path.parent != Path('.'):
+            output_subdir = output_dir / rel_path.parent
+            output_subdir.mkdir(parents=True, exist_ok=True)
+            return output_subdir / (rel_path.stem + suffix)
+    except ValueError:
+        # File is outside cwd, use absolute path's parent dirs
+        pass
+
+    # Fallback: just use the filename
+    return output_dir / (input_path.stem + suffix)
+
+
 def generate_mark_scheme(provider: str, model: str, file: str | Path, save: bool = True):
     system_prompt = """You are an expert mark scheme creator for undergraduate Computer Science and Mathematics courses.
 
@@ -106,10 +138,9 @@ Generate a complete, well-structured mark scheme following these guidelines.
         else:
             pdf_path = Path(file)
 
-        output_filename = pdf_path.stem + ".md"
-        output_path = mark_schemes_dir / output_filename
-
+        output_path = _get_unique_output_path(pdf_path, mark_schemes_dir, suffix=".md")
         output_path.write_text(response)
+        print(f"Mark scheme saved to: {output_path}")
 
     return response
 
@@ -117,7 +148,10 @@ Generate a complete, well-structured mark scheme following these guidelines.
 
 def generate_feedback(provider: str, model: str, paper_file: str | Path, student_answers: str | Path | list[str | Path], save: bool = True):
     paper_path = Path(paper_file)
-    mark_scheme_path = Path("mark_schemes") / (paper_path.stem + ".md")
+    mark_schemes_dir = Path("mark_schemes")
+
+    # Use the same unique path logic to find the mark scheme
+    mark_scheme_path = _get_unique_output_path(paper_path, mark_schemes_dir, suffix=".md")
 
     if not mark_scheme_path.exists():
         print(f"Mark scheme not found. Generating mark scheme for {paper_path.name}...")
@@ -244,9 +278,28 @@ Please evaluate the student answers in the attached file.
         feedback_dir = Path("feedback")
         feedback_dir.mkdir(exist_ok=True)
 
-        student_path = Path(student_answers)
-        output_filename = f"{paper_path.stem}_feedback_{student_path.stem}.md"
-        output_path = feedback_dir / output_filename
+        # Handle both single file and list of files
+        if isinstance(student_answers, list):
+            student_path = Path(student_answers[0])
+        else:
+            student_path = Path(student_answers)
+
+        # Get unique paths for both paper and student answers
+        paper_unique_path = _get_unique_output_path(paper_path, Path("_temp"), suffix="")
+        student_unique_path = _get_unique_output_path(student_path, Path("_temp"), suffix="")
+
+        # Create the relative path structure in feedback directory
+        # Combine paper and student paths to create unique identifier
+        if paper_unique_path.parent != Path("_temp"):
+            # Paper is in subdirectory - preserve structure
+            feedback_subdir = feedback_dir / paper_unique_path.parent
+            feedback_subdir.mkdir(parents=True, exist_ok=True)
+            output_filename = f"{paper_unique_path.stem}_feedback_{student_unique_path.stem}.md"
+            output_path = feedback_subdir / output_filename
+        else:
+            # Paper is in root - use simple naming
+            output_filename = f"{paper_path.stem}_feedback_{student_path.stem}.md"
+            output_path = feedback_dir / output_filename
 
         output_path.write_text(response)
         print(f"Feedback saved to: {output_path}")
