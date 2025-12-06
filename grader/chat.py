@@ -5,6 +5,9 @@ from rich.markdown import Markdown
 from rich.live import Live
 from rich.spinner import Spinner
 from .generate_grade import generate_feedback, _get_unique_output_path
+from prompt_toolkit import prompt
+from prompt_toolkit.history import InMemoryHistory
+from prompt_toolkit.styles import Style
 
 
 def stream_markdown(stream_iterator, console: Console) -> str:
@@ -172,12 +175,20 @@ I also have access to the original exam paper and my answers for reference."""
         console.print(f"\n[red]Error initializing conversation: {e}[/red]")
         return
 
+    # Initialize input history for arrow key navigation
+    input_history = InMemoryHistory()
+
     # Main chat loop
     while True:
         try:
-            # Get user input
-            console.print("\n[bold green]You:[/bold green] ", end="")
-            user_input = input().strip()
+            # Get user input with arrow key support
+            console.print("\n[bold green]You:[/bold green] ")
+            user_input = prompt(
+                "",
+                history=input_history,
+                multiline=False,
+                vi_mode=False
+            ).strip()
 
             if not user_input:
                 continue
@@ -239,6 +250,9 @@ I also have access to the original exam paper and my answers for reference."""
 
         except KeyboardInterrupt:
             console.print("\n\n[yellow]Interrupted by user. Goodbye![/yellow]")
+            break
+        except EOFError:
+            console.print("\n\n[yellow]Ending conversation. Good luck with your studies![/yellow]")
             break
         except Exception as e:
             console.print(f"\n[red]Unexpected error: {e}[/red]")
