@@ -2,7 +2,29 @@ from litellm_utils import Conversation
 from pathlib import Path
 from rich.console import Console
 from rich.markdown import Markdown
+from rich.live import Live
 from .generate_grade import generate_feedback
+
+
+def stream_markdown(stream_iterator, console: Console) -> str:
+    """
+    Stream tokens and display as live-updating markdown.
+
+    Args:
+        stream_iterator: Iterator yielding text chunks
+        console: Rich Console instance
+
+    Returns:
+        Complete streamed text
+    """
+    accumulated_text = ""
+
+    with Live(Markdown(""), console=console, refresh_per_second=10) as live:
+        for chunk in stream_iterator:
+            accumulated_text += chunk
+            live.update(Markdown(accumulated_text))
+
+    return accumulated_text
 
 
 def discuss_feedback(
@@ -113,20 +135,18 @@ I also have access to the original exam paper and my answers for reference."""
         console.print("\n[bold green]Feedback Discussion Started![/bold green]")
         console.print("\n[dim]Commands: 'quit'/'exit' to end, 'history' to view chat, 'clear' to reset, 'feedback' to re-display feedback[/dim]")
         console.print("=" * 60)
-        console.print("\n[bold cyan]Assistant:[/bold cyan]")
+        console.print("\n[bold cyan]Assistant:[/bold cyan]\n")
 
-        # Stream initial response
-        response = ""
-        for chunk in conversation.stream(
-            user_text=initial_message,
-            file=[str(paper_file), str(student_answers)]
-        ):
-            response += chunk
-
-        # Display with Rich markdown
-        console.print(Markdown(response))
+        # Stream initial response with live markdown
+        stream_markdown(
+            conversation.stream(
+                user_text=initial_message,
+                file=[str(paper_file), str(student_answers)]
+            ),
+            console
+        )
     except Exception as e:
-        console.print(f"[red]Error initializing conversation: {e}[/red]")
+        console.print(f"\n[red]Error initializing conversation: {e}[/red]")
         return
 
     # Main chat loop
@@ -150,10 +170,25 @@ I also have access to the original exam paper and my answers for reference."""
                 for i, msg in enumerate(history, 1):
                     role = msg['role'].upper()
                     console.print(f"\n[bold]{i}. {role}:[/bold]")
-                    if isinstance(msg.get('content'), str):
-                        console.print(Markdown(msg['content']))
+                    content = msg.get('content')
+
+                    # Handle different content types
+                    if isinstance(content, str):
+                        console.print(content)
+                    elif isinstance(content, list):
+                        # Extract only text parts, skip file data
+                        for part in content:
+                            if isinstance(part, dict):
+                                if part.get('type') == 'text':
+                                    console.print(part.get('text', ''))
+                                elif part.get('type') == 'image_url':
+                                    console.print("[dim][File: Image attached][/dim]")
+                                else:
+                                    console.print(f"[dim][File attached][/dim]")
+                            elif isinstance(part, str):
+                                console.print(part)
                     else:
-                        console.print(msg.get('content'))
+                        console.print(str(content))
                 console.print("\n[bold cyan]--- End of History ---[/bold cyan]")
                 continue
 
@@ -169,15 +204,10 @@ I also have access to the original exam paper and my answers for reference."""
                 continue
 
             # Stream AI response
-            console.print("\n[bold cyan]Assistant:[/bold cyan]")
-            response_text = ""
+            console.print("\n[bold cyan]Assistant:[/bold cyan]\n")
 
             try:
-                for chunk in conversation.stream(user_text=user_input):
-                    response_text += chunk
-
-                # Display with Rich markdown
-                console.print(Markdown(response_text))
+                stream_markdown(conversation.stream(user_text=user_input), console)
 
             except Exception as e:
                 console.print(f"[red]Error getting response: {e}[/red]")
