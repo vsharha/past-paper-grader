@@ -437,7 +437,6 @@ This ensures fair grading and helps students understand they demonstrated method
     except Exception as e:
         console.print(f"\n[red]Error during discussion: {e}[/red]")
 
-
 def main():
     """Main entry point for the grading system."""
     console = Console()

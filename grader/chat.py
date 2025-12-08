@@ -4,7 +4,7 @@ from rich.console import Console
 from rich.markdown import Markdown
 from rich.live import Live
 from rich.spinner import Spinner
-from .generate_grade import generate_feedback, _get_unique_output_path
+from .generate_grade import generate_feedback, _get_relative_structure
 from prompt_toolkit import prompt
 from prompt_toolkit.history import InMemoryHistory
 from prompt_toolkit.styles import Style
@@ -84,19 +84,19 @@ def discuss_feedback(
     # Derive expected feedback file path using the same logic as generate_feedback
     feedback_dir = Path("feedback")
 
-    # Get unique paths for both paper and student answers
-    paper_unique_path = _get_unique_output_path(paper_path, Path("_temp"), suffix="")
-    student_unique_path = _get_unique_output_path(student_path, Path("_temp"), suffix="")
+    # Get relative structures for both paper and student answers
+    paper_parent, paper_stem = _get_relative_structure(paper_path)
+    student_parent, student_stem = _get_relative_structure(student_path)
 
     # Create the feedback path matching generate_feedback logic
-    if paper_unique_path.parent != Path("_temp"):
+    if paper_parent != Path('.'):
         # Paper is in subdirectory - preserve structure
-        feedback_subdir = feedback_dir / paper_unique_path.parent
-        output_filename = f"{paper_unique_path.stem}_feedback_{student_unique_path.stem}.md"
+        feedback_subdir = feedback_dir / paper_parent
+        output_filename = f"{paper_stem}_feedback_{student_stem}.md"
         feedback_path = feedback_subdir / output_filename
     else:
         # Paper is in root - use simple naming
-        output_filename = f"{paper_path.stem}_feedback_{student_path.stem}.md"
+        output_filename = f"{paper_stem}_feedback_{student_stem}.md"
         feedback_path = feedback_dir / output_filename
 
     # Check if feedback exists, generate if not
@@ -163,10 +163,11 @@ I also have access to the original exam paper and my answers for reference."""
         console.print("\n[bold cyan]Assistant:[/bold cyan]")
 
         # Stream initial response with live markdown
+        # Pass both the paper and student files as Path objects (not strings)
         stream_markdown(
             conversation.stream(
                 user_text=initial_message,
-                file=[str(paper_file), str(student_answers)]
+                file=[paper_path, student_path]
             ),
             console
         )
