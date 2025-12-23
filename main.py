@@ -344,8 +344,8 @@ This ensures fair grading and helps students understand they demonstrated method
             feedback = generate_feedback(
                 provider="gemini",
                 model="gemini-3-pro-preview",
-                paper_file=str(selected_paper),
-                student_answers=str(selected_solution),
+                paper_file=selected_paper,
+                student_answers=selected_solution,
                 additional_instructions=follow_through_instructions,
             )
 
@@ -456,7 +456,6 @@ def main():
         console.print("\n\n[yellow]Operation cancelled by user. Goodbye![/yellow]")
     except Exception as e:
         console.print(f"\n[red]Unexpected error: {e}[/red]")
-
 
 if __name__ == "__main__":
     main()
