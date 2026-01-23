@@ -15,7 +15,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 def select_mode(console: Console) -> str:
-    """Display mode selection menu and return selected mode."""
     console.print("\n")
     console.print(
         Panel.fit(
@@ -49,7 +48,6 @@ def select_mode(console: Console) -> str:
 def select_file(
     console: Console, directory: Path, title: str, status_func=None
 ) -> Path | None:
-    """Helper function to select a file from a directory."""
     files = sorted(list(directory.glob("**/*.pdf")))
 
     if not files:
@@ -88,7 +86,6 @@ def select_file(
 def select_multiple_files(
     console: Console, directory: Path, title: str, status_func=None
 ) -> list[Path] | None:
-    """Helper function to select multiple files from a directory."""
     files = sorted(list(directory.glob("**/*.pdf")))
 
     if not files:
@@ -134,7 +131,6 @@ def select_multiple_files(
 
 
 def generate_mark_scheme_mode():
-    """Mode for generating only a mark scheme."""
     console = Console()
     past_papers_dir = Path("past_papers")
 
@@ -190,7 +186,6 @@ This ensures fair marking when students make early errors but demonstrate unders
 
             # Generate mark schemes in parallel
             def generate_single_mark_scheme(paper_path):
-                """Helper function to generate a single mark scheme."""
                 try:
                     generate_mark_scheme(
                         provider="gemini",
@@ -284,7 +279,6 @@ This ensures fair marking when students make early errors but demonstrate unders
 
 
 def generate_feedback_mode():
-    """Mode for generating feedback only."""
     console = Console()
     past_papers_dir = Path("past_papers")
     solutions_dir = Path("solutions")
@@ -367,7 +361,6 @@ This ensures fair grading and helps students understand they demonstrated method
 
 
 def select_and_discuss():
-    """Mode for interactive feedback discussion."""
     console = Console()
     past_papers_dir = Path("past_papers")
     solutions_dir = Path("solutions")
@@ -438,7 +431,6 @@ This ensures fair grading and helps students understand they demonstrated method
         console.print(f"\n[red]Error during discussion: {e}[/red]")
 
 def main():
-    """Main entry point for the grading system."""
     console = Console()
 
     try:

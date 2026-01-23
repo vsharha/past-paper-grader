@@ -3,16 +3,6 @@ from pathlib import Path
 
 
 def _get_relative_structure(input_path: Path) -> tuple[Path, str]:
-    """
-    Get the relative directory structure and filename stem for an input path.
-
-    Returns:
-        Tuple of (parent_dir_relative_to_cwd, filename_stem)
-
-    Examples:
-        past_papers/2023/exam.pdf -> (Path("past_papers/2023"), "exam")
-        exam.pdf -> (Path("."), "exam")
-    """
     abs_input = input_path.resolve()
     cwd = Path.cwd()
 
@@ -25,47 +15,20 @@ def _get_relative_structure(input_path: Path) -> tuple[Path, str]:
 
 
 def _get_unique_output_path(input_path: Path, output_dir: Path, suffix: str = ".md", create_dirs: bool = True) -> Path:
-    """
-    Generate a unique output path that preserves directory structure.
-
-    For files in subdirectories, creates corresponding subdirectories in output_dir.
-    For files in current directory, uses filename directly.
-
-    Examples:
-        past_papers/2023/exam.pdf -> mark_schemes/past_papers/2023/exam.md
-        exam.pdf -> mark_schemes/exam.md
-
-    Args:
-        input_path: Input file path
-        output_dir: Base output directory
-        suffix: File suffix to use
-        create_dirs: Whether to create directories (default True)
-    """
     parent_rel, stem = _get_relative_structure(input_path)
 
-    # If the file is in a subdirectory, preserve the structure
     if parent_rel != Path('.'):
         output_subdir = output_dir / parent_rel
         if create_dirs:
             output_subdir.mkdir(parents=True, exist_ok=True)
         return output_subdir / (stem + suffix)
 
-    # Fallback: just use the filename
     if create_dirs:
         output_dir.mkdir(parents=True, exist_ok=True)
     return output_dir / (stem + suffix)
 
 
 def has_mark_scheme(paper_file: str | Path) -> bool:
-    """
-    Check if a mark scheme already exists for the given paper.
-
-    Args:
-        paper_file: Path to the exam paper PDF
-
-    Returns:
-        True if mark scheme exists, False otherwise
-    """
     paper_path = Path(paper_file)
     mark_schemes_dir = Path("mark_schemes")
     mark_scheme_path = _get_unique_output_path(paper_path, mark_schemes_dir, suffix=".md", create_dirs=False)
@@ -73,37 +36,22 @@ def has_mark_scheme(paper_file: str | Path) -> bool:
 
 
 def has_feedback(paper_file: str | Path, student_answers: str | Path) -> bool:
-    """
-    Check if feedback already exists for the given paper and student answers.
-
-    Args:
-        paper_file: Path to the exam paper PDF
-        student_answers: Path to the student's answers
-
-    Returns:
-        True if feedback exists, False otherwise
-    """
     paper_path = Path(paper_file)
     feedback_dir = Path("feedback")
 
-    # Handle list of files
     if isinstance(student_answers, list):
         student_path = Path(student_answers[0])
     else:
         student_path = Path(student_answers)
 
-    # Get relative structures for both paper and student answers
     paper_parent, paper_stem = _get_relative_structure(paper_path)
     student_parent, student_stem = _get_relative_structure(student_path)
 
-    # Create the feedback path matching generate_feedback logic
     if paper_parent != Path('.'):
-        # Paper is in subdirectory - preserve structure
         feedback_subdir = feedback_dir / paper_parent
         output_filename = f"{paper_stem}_feedback_{student_stem}.md"
         feedback_path = feedback_subdir / output_filename
     else:
-        # Paper is in root - use simple naming
         output_filename = f"{paper_stem}_feedback_{student_stem}.md"
         feedback_path = feedback_dir / output_filename
 
@@ -198,7 +146,6 @@ For each question, provide:
 Generate a complete, well-structured mark scheme following these guidelines.
 """
 
-    # Append additional instructions if provided
     if additional_instructions:
         system_prompt += f"\n\n## Additional Instructions:\n\n{additional_instructions}"
 
@@ -231,7 +178,6 @@ def generate_feedback(provider: str, model: str, paper_file: str | Path, student
     paper_path = Path(paper_file)
     mark_schemes_dir = Path("mark_schemes")
 
-    # Use the same unique path logic to find the mark scheme (don't create dirs yet)
     mark_scheme_path = _get_unique_output_path(paper_path, mark_schemes_dir, suffix=".md", create_dirs=False)
 
     if not mark_scheme_path.exists():
@@ -334,7 +280,6 @@ Your task is to evaluate student answers against the provided mark scheme and ge
 Generate comprehensive, fair, and educational feedback.
 """
 
-    # Append additional instructions if provided
     if additional_instructions:
         feedback_prompt += f"\n\n## Additional Instructions:\n\n{additional_instructions}"
 
@@ -362,26 +307,20 @@ Please evaluate the student answers in the attached file.
     if save:
         feedback_dir = Path("feedback")
 
-        # Handle both single file and list of files
         if isinstance(student_answers, list):
             student_path = Path(student_answers[0])
         else:
             student_path = Path(student_answers)
 
-        # Get relative structures for both paper and student answers
         paper_parent, paper_stem = _get_relative_structure(paper_path)
         student_parent, student_stem = _get_relative_structure(student_path)
 
-        # Create the relative path structure in feedback directory
-        # Combine paper and student paths to create unique identifier
         if paper_parent != Path('.'):
-            # Paper is in subdirectory - preserve structure
             feedback_subdir = feedback_dir / paper_parent
             feedback_subdir.mkdir(parents=True, exist_ok=True)
             output_filename = f"{paper_stem}_feedback_{student_stem}.md"
             output_path = feedback_subdir / output_filename
         else:
-            # Paper is in root - use simple naming
             feedback_dir.mkdir(exist_ok=True)
             output_filename = f"{paper_stem}_feedback_{student_stem}.md"
             output_path = feedback_dir / output_filename

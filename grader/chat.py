@@ -11,16 +11,6 @@ from prompt_toolkit.styles import Style
 
 
 def stream_markdown(stream_iterator, console: Console) -> str:
-    """
-    Stream tokens and display as live-updating markdown with loading animation.
-
-    Args:
-        stream_iterator: Iterator yielding text chunks
-        console: Rich Console instance
-
-    Returns:
-        Complete streamed text
-    """
     accumulated_text = ""
     first_chunk = True
 
@@ -46,31 +36,6 @@ def discuss_feedback(
     feedback_model: str | None = None,
     additional_instructions: str = ""
 ) -> None:
-    """
-    Interactive chat to discuss exam feedback with AI.
-
-    This function:
-    1. Checks if feedback exists, generates it if not
-    2. Loads the feedback and context files
-    3. Starts an interactive conversation with an AI academic advisor
-    4. Allows students to ask questions about their grades and feedback
-
-    Args:
-        provider: AI provider for chat conversation (e.g., "gemini", "openai", "claude")
-        model: Model for chat conversation (e.g., "gemini-3-pro-preview", "gpt-4", "claude-sonnet-4.5")
-        paper_file: Path to the original past paper PDF
-        student_answers: Path to the student's answers (PDF or text file)
-        feedback_provider: AI provider for feedback generation (defaults to chat_provider if None)
-        feedback_model: Model for feedback generation (defaults to chat_model if None)
-        additional_instructions: Additional instructions to append to system prompts
-
-    Special commands:
-        - quit/exit: End the conversation
-        - history: Show full conversation history
-        - clear: Clear conversation history (keeps system prompt)
-        - feedback: Re-display the original feedback
-    """
-    # Default feedback provider/model to chat provider/model if not specified
     if feedback_provider is None:
         feedback_provider = provider
     if feedback_model is None:
@@ -81,38 +46,30 @@ def discuss_feedback(
     paper_path = Path(paper_file)
     student_path = Path(student_answers)
 
-    # Derive expected feedback file path using the same logic as generate_feedback
     feedback_dir = Path("feedback")
 
-    # Get relative structures for both paper and student answers
     paper_parent, paper_stem = _get_relative_structure(paper_path)
     student_parent, student_stem = _get_relative_structure(student_path)
 
-    # Create the feedback path matching generate_feedback logic
     if paper_parent != Path('.'):
-        # Paper is in subdirectory - preserve structure
         feedback_subdir = feedback_dir / paper_parent
         output_filename = f"{paper_stem}_feedback_{student_stem}.md"
         feedback_path = feedback_subdir / output_filename
     else:
-        # Paper is in root - use simple naming
         output_filename = f"{paper_stem}_feedback_{student_stem}.md"
         feedback_path = feedback_dir / output_filename
 
-    # Check if feedback exists, generate if not
     if not feedback_path.exists():
         console.print(f"[yellow]Feedback not found. Generating feedback for {paper_path.name}...[/yellow]")
         generate_feedback(feedback_provider, feedback_model, paper_file, student_answers, additional_instructions=additional_instructions)
         console.print("[green]Feedback generated successfully![/green]\n")
 
-    # Load feedback content
     try:
         feedback_content = feedback_path.read_text()
     except Exception as e:
         console.print(f"[red]Error reading feedback file: {e}[/red]")
         return
 
-    # Initialize conversation
     system_prompt = """You are an expert academic advisor for undergraduate Computer Science and Mathematics courses.
 
 You are helping a student understand and discuss their exam feedback. You have access to:
@@ -146,7 +103,6 @@ Be constructive, supportive, and educational."""
         temperature=0.3
     )
 
-    # Send initial context message
     console.print("[cyan]Loading feedback and context files...[/cyan]")
     initial_message = f"""I have received feedback on my exam. I'd like to discuss it with you.
 
@@ -162,8 +118,6 @@ I also have access to the original exam paper and my answers for reference."""
         console.print("=" * 60)
         console.print("\n[bold cyan]Assistant:[/bold cyan]")
 
-        # Stream initial response with live markdown
-        # Pass both the paper and student files as Path objects (not strings)
         stream_markdown(
             conversation.stream(
                 user_text=initial_message,
@@ -176,10 +130,8 @@ I also have access to the original exam paper and my answers for reference."""
         console.print(f"\n[red]Error initializing conversation: {e}[/red]")
         return
 
-    # Initialize input history for arrow key navigation
     input_history = InMemoryHistory()
 
-    # Main chat loop
     while True:
         try:
             # Get user input with arrow key support
@@ -194,7 +146,6 @@ I also have access to the original exam paper and my answers for reference."""
             if not user_input:
                 continue
 
-            # Handle special commands
             if user_input.lower() in ['quit', 'exit']:
                 console.print("\n[yellow]Ending conversation. Good luck with your studies![/yellow]")
                 break
@@ -238,7 +189,6 @@ I also have access to the original exam paper and my answers for reference."""
                 console.print("\n[bold cyan]--- End of Feedback ---[/bold cyan]")
                 continue
 
-            # Stream AI response
             console.print("\n[bold cyan]Assistant:[/bold cyan]")
 
             try:
