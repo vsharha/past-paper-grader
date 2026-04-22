@@ -189,7 +189,7 @@ This ensures fair marking when students make early errors but demonstrate unders
                 try:
                     generate_mark_scheme(
                         provider="gemini",
-                        model="gemini-3-pro-preview",
+                        model="gemini-3.1-pro-preview",
                         file=str(paper_path),
                         additional_instructions=follow_through_instructions,
                     )
@@ -254,7 +254,7 @@ This ensures fair marking when students make early errors but demonstrate unders
             with console.status("[bold cyan]Generating mark scheme..."):
                 mark_scheme = generate_mark_scheme(
                     provider="gemini",
-                    model="gemini-3-pro-preview",
+                    model="gemini-3.1-pro-preview",
                     file=str(selected_paper),
                     additional_instructions=follow_through_instructions,
                 )
@@ -337,7 +337,7 @@ This ensures fair grading and helps students understand they demonstrated method
         with console.status("[bold cyan]Generating feedback..."):
             feedback = generate_feedback(
                 provider="gemini",
-                model="gemini-3-pro-preview",
+                model="gemini-3.1-pro-preview",
                 paper_file=selected_paper,
                 student_answers=selected_solution,
                 additional_instructions=follow_through_instructions,
@@ -418,11 +418,11 @@ This ensures fair grading and helps students understand they demonstrated method
 
         discuss_feedback(
             provider="gemini",
-            model="gemini-2.5-flash",
+            model="gemini-3-flash-preview",
             paper_file=str(selected_paper),
             student_answers=str(selected_solution),
             feedback_provider="gemini",
-            feedback_model="gemini-3-pro-preview",
+            feedback_model="gemini-3.1-pro-preview",
             additional_instructions=follow_through_instructions,
         )
     except KeyboardInterrupt:
